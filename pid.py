@@ -3,22 +3,13 @@ import board
 import datetime
 import adafruit_dht
 import db
-from db import EVENT_HUMIDITY
-from db import EVENT_TEMPERATURE
 from db import EVENT_STARTUP
 from db import EVENT_SHUTDOWN
 import display
 import controller
-from simple_pid import PID
 
 target_temperature = 30
-targetHumidity = 70
-cur = 0
-p = 0.5
-i = 0.01
-d = 0.05
-pidTemp = PID(p, i, d, setpoint=target_temperature)
-pidHumidity = PID(p, i, d, setpoint=targetHumidity)
+target_humidity = 70
 
 sensor = adafruit_dht.DHT22(board.D5)
 
@@ -33,23 +24,23 @@ loopTimeout = 20
 
 def setupMain():
     db.setup()
-    display.setup()
-    display.writeText("Initializing")
+    display.setup(target_temperature, target_humidity)
+    display.set_phase("Initializing")
     controller.setup()
 
 
 def main():
     setupMain()
     db.writeEvent(EVENT_STARTUP, '_')
-    display.writeText("Initialization complete")
+    display.set_phase("Initialization complete")
     warmup(0)
     loop()
 
 
 def warmup(warmup_time):
-    display.writeText("Warming up for {} s".format(warmup_time))
+    display.set_phase("Warmup {} s".format(warmup_time))
     db.writeEvent(db.EVENT_WARMUP, 'warmuptime: {}, targettemp: {}, targethumidity: {}'
-                  .format(warmup_time, target_temperature, targetHumidity))
+                  .format(warmup_time, target_temperature, target_humidity))
     controller.activate_humidifier()
     controller.activate_heatpad()
 
@@ -63,7 +54,7 @@ def warmup(warmup_time):
             if temperature > target_temperature:
                 controller.deactivate_heatpad()
                 break;
-            if humidity > targetHumidity:
+            if humidity > target_humidity:
                 controller.deactivate_humidifier()
             else:
                 controller.activate_humidifier()
@@ -82,12 +73,13 @@ def write_sensors(humidity, temperature):
     print("Current temp {}".format(temperature))
     print("Current humidity {}".format(humidity))
 
-    display.writeText("Temp: {} / {} \n Hum: {}/{}".format(temperature, target_temperature,
-                                                           humidity, targetHumidity))
+    display.set_sensors(temperature, humidity);
+
     db.writeSensors(humidity, temperature)
 
 
 def loop():
+    display.set_phase("Mainloop")
     try:
         while True:
 
@@ -102,9 +94,8 @@ def loop():
                 else:
                     controller.deactivate_heatpad()
 
-                if targetHumidity - humidity > humidityThreshold:
+                if target_humidity - humidity > humidityThreshold:
                     controller.activate_humidifier_timed(timeHumidifier)
-
 
             except RuntimeError as error:
                 print(error.args[0])

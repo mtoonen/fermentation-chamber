@@ -22,7 +22,6 @@ low = GPIO.LOW
 def setup():
     """setup GPIOs"""
     print('Setting up peripherals')
-  #  GPIO.setmode(GPIO.BOARD)
     GPIO.setup(heatOutput, GPIO.OUT)
     GPIO.setup(humidityOutput, GPIO.OUT)
     sleep(1)
@@ -37,6 +36,7 @@ def destructor():
 
 def activate_heatpad_timed(time):
     print("Activate heatpad")
+    display.set_output_heatmat(True)
     set_pin_to(heatOutput, low, time)
     db.writeEvent(EVENT_TEMPERATURE, 'on')
 
@@ -44,9 +44,11 @@ def activate_heatpad_timed(time):
 def deactivate_heatpad():
     print("Deactivate heatpad")
     set_pin_to(heatOutput, high)
+    display.set_output_heatmat(False)
     db.writeEvent(EVENT_TEMPERATURE, 'off')
 
 def activate_heatpad():
+    display.set_output_heatmat(True)
     activate_heatpad_timed(1)
 
 def activate_humidifier_timed(time):
@@ -59,6 +61,7 @@ def activate_humidifier_timed(time):
 def activate_humidifier():
     set_pin_to(humidityOutput, high, humiditySwitchTime)
     set_pin_to(humidityOutput, low, humiditySwitchTime)
+    display.set_output_humidifier(True)
     db.writeEvent(EVENT_HUMIDITY, 'on')
 
 
@@ -68,6 +71,7 @@ def deactivate_humidifier():
     set_pin_to(humidityOutput, high, humiditySwitchTime)
     set_pin_to(humidityOutput, low, humiditySwitchTime)
     set_pin_to(humidityOutput, high, humiditySwitchTime)
+    display.set_output_humidifier(False)
     db.writeEvent(EVENT_HUMIDITY, 'off')
     # os.system('sudo hub-ctrl -b 001 -d 002 -P 2 -p 0')
 

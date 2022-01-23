@@ -11,10 +11,11 @@ import controller
 target_temperature = 30
 target_humidity = 70
 
-sensor = adafruit_dht.DHT22(board.D5)
+sensor = adafruit_dht.DHT11(board.D5)
+sensor_back = adafruit_dht.DHT11(board.D27)
 
 timeHeat = 1
-timeHumidifier = 10
+timeHumidifier = 5
 
 temperature_threshold = 1
 humidityThreshold = 1
@@ -67,15 +68,42 @@ def warmup(warmup_time):
             print(error.args[0])
             time.sleep(2.0)
             continue
+    controller.deactivate_humidifier()
+    controller.deactivate_heatpad()
 
 
-def write_sensors(humidity, temperature):
-    print("Current temp {}".format(temperature))
-    print("Current humidity {}".format(humidity))
+def write_sensors(sensor_readings):
+    average_temp = average(sensor_readings, "temperature")
+    average_humidity = average(sensor_readings, "humidity")
+    print("Current temp average: {}, main: {}, achter: {}"
+          .format(average_temp, sensor_readings["temperature"][0], sensor_readings["temperature"][1]))
+    print("Current humidity average: {}, main: {}, achter: {}"
+          .format(average_humidity, sensor_readings["humidity"][0], sensor_readings["humidity"][1]))
 
-    display.set_sensors(temperature, humidity);
+    display.set_sensors(average_temp, average_humidity)
 
-    db.writeSensors(humidity, temperature)
+    db.writeSensors(sensor_readings)
+
+
+def get_sensor_readings():
+    readings = {"temperature": [], "humidity": []}
+
+    try:
+        readings["temperature"].append(sensor.temperature)
+        readings["humidity"].append(sensor.humidity)
+    except RuntimeError as error:
+        readings["temperature"].append(None)
+        readings["humidity"].append(None)
+
+    try:
+        readings["temperature"].append(sensor_back.temperature)
+        readings["humidity"].append(sensor_back.humidity)
+    except RuntimeError as error:
+        readings["temperature"].append(None)
+        readings["humidity"].append(None)
+
+
+    return readings
 
 
 def loop():
@@ -84,12 +112,13 @@ def loop():
         while True:
 
             try:
-                # Print the values to the serial port
-                temperature = sensor.temperature
-                humidity = sensor.humidity
+                readings = get_sensor_readings()
 
-                write_sensors(humidity, temperature)
-                if target_temperature - temperature > temperature_threshold:
+                write_sensors(readings)
+                temperature = average(readings, "temperature")
+                humidity = min_of_list(readings, "humidity")
+
+                if target_temperature > temperature:
                     controller.activate_heatpad()
                 else:
                     controller.deactivate_heatpad()
@@ -108,6 +137,20 @@ def loop():
             time.sleep(loopTimeout)
     finally:
         exit_handler()
+
+
+def average(readings, key):
+    filtered = [number for number in readings[key] if number is not None]
+    if len(filtered) == 0:
+        raise RuntimeError("errored on reading sensors")
+    return sum(filtered) / len(filtered)
+
+
+def min_of_list(readings, key):
+    filtered = [number for number in readings[key] if number is not None]
+    if len(filtered) == 0:
+        raise RuntimeError("errored on reading sensors")
+    return min(filtered)
 
 
 def destructor():

@@ -18,62 +18,87 @@ humiditySwitchTime = 0.1
 high = GPIO.HIGH
 low = GPIO.LOW
 
+current_state_humidity = True
+current_state_heatmat = False
+
 
 def setup():
     """setup GPIOs"""
     print('Setting up peripherals')
     GPIO.setup(heatOutput, GPIO.OUT)
     GPIO.setup(humidityOutput, GPIO.OUT)
-    sleep(1)
+    sleep(2)
     deactivate_humidifier()
 
 
 def destructor():
-    deactivate_humidifier()
+   # deactivate_humidifier()
     deactivate_heatpad()
     GPIO.cleanup()
 
 
 def activate_heatpad_timed(time):
-    print("Activate heatpad")
-    display.set_output_heatmat(True)
-    set_pin_to(heatOutput, low, time)
-    db.writeEvent(EVENT_TEMPERATURE, 'on')
+    global current_state_heatmat
+    if not current_state_heatmat:
+        print("Activate heatpad")
+        display.set_output_heatmat(True)
+        current_state_heatmat = True
+        db.writeEvent(EVENT_TEMPERATURE, 'on')
+        set_pin_to(heatOutput, low, time)
+        deactivate_heatpad()
 
 
 def deactivate_heatpad():
-    print("Deactivate heatpad")
-    set_pin_to(heatOutput, high)
-    display.set_output_heatmat(False)
-    db.writeEvent(EVENT_TEMPERATURE, 'off')
+    global current_state_heatmat
+    if current_state_heatmat:
+        print("Deactivate heatpad")
+        set_pin_to(heatOutput, high)
+        display.set_output_heatmat(False)
+        db.writeEvent(EVENT_TEMPERATURE, 'off')
+        current_state_heatmat = False
+
 
 def activate_heatpad():
-    display.set_output_heatmat(True)
-    activate_heatpad_timed(1)
+    global current_state_heatmat
+    if not current_state_heatmat:
+        display.set_output_heatmat(True)
+        set_pin_to(heatOutput, low)
+        current_state_heatmat = True
+
 
 def activate_humidifier_timed(time):
-    print("Activate humidifier")
-    # os.system('sudo hub-ctrl -b 001 -d 002 -P 2 -p 1')
-    activate_humidifier()
-    sleep(time)
-    deactivate_humidifier()
+    global current_state_humidity
+    if not current_state_humidity:
+        # os.system('sudo hub-ctrl -b 001 -d 002 -P 2 -p 1')
+        activate_humidifier()
+        current_state_humidity = True
+        sleep(time)
+        deactivate_humidifier()
+
 
 def activate_humidifier():
-    set_pin_to(humidityOutput, high, humiditySwitchTime)
-    set_pin_to(humidityOutput, low, humiditySwitchTime)
-    display.set_output_humidifier(True)
-    db.writeEvent(EVENT_HUMIDITY, 'on')
+    global current_state_humidity
+    if not current_state_humidity:
+        print("Activate humidifier")
+        set_pin_to(humidityOutput, high, humiditySwitchTime)
+        set_pin_to(humidityOutput, low, humiditySwitchTime)
+        display.set_output_humidifier(True)
+        db.writeEvent(EVENT_HUMIDITY, 'on')
+        current_state_humidity = True
 
 
 def deactivate_humidifier():
-    print("Deactivate humidifier")
-    set_pin_to(humidityOutput, low, humiditySwitchTime)
-    set_pin_to(humidityOutput, high, humiditySwitchTime)
-    set_pin_to(humidityOutput, low, humiditySwitchTime)
-    set_pin_to(humidityOutput, high, humiditySwitchTime)
-    display.set_output_humidifier(False)
-    db.writeEvent(EVENT_HUMIDITY, 'off')
-    # os.system('sudo hub-ctrl -b 001 -d 002 -P 2 -p 0')
+    global current_state_humidity
+    if current_state_humidity:
+        print("Deactivate humidifier")
+        set_pin_to(humidityOutput, low, humiditySwitchTime)
+        set_pin_to(humidityOutput, high, humiditySwitchTime)
+        set_pin_to(humidityOutput, low, humiditySwitchTime)
+        set_pin_to(humidityOutput, high, humiditySwitchTime)
+        display.set_output_humidifier(False)
+        db.writeEvent(EVENT_HUMIDITY, 'off')
+        current_state_humidity = False
+        # os.system('sudo hub-ctrl -b 001 -d 002 -P 2 -p 0')
 
 
 def set_pin_to(pin, state, time=0):

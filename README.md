@@ -12,17 +12,35 @@ For my birthday I got this cool book about fermentation [1]. This talked about f
 ## Components
 
 * Raspberry Pi (I used 2b)
-* Temperature and humidity sensor [2]
+* Temperature and humidity sensor (AM2301, but DHT11/DHT22 should work as well) [2]
 * Solid State Relay [3]
 * Humidifier [4]
 * Raspberry pi prototyping hat [5]
 * Display [6]
 * Heatmat [7]
 * WiFi module [8]
-* Tempex boxv [9]
+* Styrofoam box [9]
 
 ## Connections
  add connections layout
+
+| Component                   | Pin/color        | RPi pin     |
+|-----------------------------|:-----------------|:------------|
+| Temperature/humidity sensor | Yellow           | #5          |
+|                             | Black            | ground      |
+|                             | Red              | 3.3v        |
+| Display                     | Power/yellow     | 3.3v        |
+|                             | Ground/green     | ground      |
+|                             | SCL/orange       | SCL         |
+|                             | SDA/red          | SDA         |
+| Humidifier                  | - / red          | - SSR (CH2) |
+|                             | + / blue         | + SSR (CH2) |
+| Heatmat                     | Brown (from mat) | + SSR(CH1)  |
+|                             | Brown (to plug)  | - SSR (CH1) |
+| SSR                         | +                | 3.3v        |
+|                             | -                | ground      |
+|                             | CH1              | #17         |
+|                             | CH2              | #18         |
 ## Software
 To run this, I used my raspberry pi as the controller for the box. On a different server, I installed postgresql and grafana. Postgresql is used to store the metrics (values from sensors, events like switching on/off the heatmat/humidifier etc). Grafana is an awesome open source tool to visualize data in real time.
 
@@ -37,6 +55,11 @@ add empty config.py
  add json model for dashboard
 ### Python environment
  add pip packages used
+
+raspberry pi
+display
+dht
+
 
 # Expansions
 waterlevel meter

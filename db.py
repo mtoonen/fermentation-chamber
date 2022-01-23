@@ -32,13 +32,16 @@ def destructor():
         print("PostgreSQL connection is closed")
 
 
-def writeSensors(humidity, temperature):
+def writeSensors(sensor_readings):
     try:
         global connection
         cursor = connection.cursor()
 
-        postgres_insert_query = """INSERT INTO measurements (humidity, temperature, timestamp) VALUES (%s,%s,%s) """
-        record_to_insert = (humidity, temperature, datetime.datetime.now())
+        postgres_insert_query = """INSERT INTO measurements (humidity, temperature, humidity_achter, 
+        temperature_achter, timestamp) VALUES (%s,%s,%s,%s,%s) """
+        record_to_insert = (sensor_readings["humidity"][0], sensor_readings["temperature"][0],
+                            sensor_readings["humidity"][1], sensor_readings["temperature"][1],
+                            datetime.datetime.now())
         cursor.execute(postgres_insert_query, record_to_insert)
 
         connection.commit()

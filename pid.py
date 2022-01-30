@@ -7,6 +7,7 @@ from db import EVENT_STARTUP
 from db import EVENT_SHUTDOWN
 import display
 import controller
+import ds18b20 as probe
 
 target_temperature = 30
 target_humidity = 70
@@ -18,6 +19,7 @@ timeHeat = 1
 timeHumidifier = 5
 
 temperature_threshold = 1
+temperature_threshold_env = 6
 humidityThreshold = 1
 
 loopTimeout = 20
@@ -32,7 +34,7 @@ def setupMain():
 
 def main():
     setupMain()
-    db.writeEvent(EVENT_STARTUP, '_')
+    db.write_event(EVENT_STARTUP, '_')
     display.set_phase("Initialization complete")
     warmup(0)
     loop()
@@ -40,8 +42,8 @@ def main():
 
 def warmup(warmup_time):
     display.set_phase("Warmup {} s".format(warmup_time))
-    db.writeEvent(db.EVENT_WARMUP, 'warmuptime: {}, targettemp: {}, targethumidity: {}'
-                  .format(warmup_time, target_temperature, target_humidity))
+    db.write_event(db.EVENT_WARMUP, 'warmuptime: {}, targettemp: {}, targethumidity: {}'
+                   .format(warmup_time, target_temperature, target_humidity))
     controller.activate_humidifier()
     controller.activate_heatpad()
 
@@ -82,7 +84,7 @@ def write_sensors(sensor_readings):
 
     display.set_sensors(average_temp, average_humidity)
 
-    db.writeSensors(sensor_readings)
+    db.write_sensors(sensor_readings)
 
 
 def get_sensor_readings():
@@ -110,6 +112,10 @@ def loop():
     display.set_phase("Mainloop")
     try:
         while True:
+            temperature_probe = probe.read_temp()
+            db.write_probe(temperature_probe)
+            display.set_probe(temperature_probe)
+            print("Probe temperature: {}".format(temperature_probe))
 
             try:
                 readings = get_sensor_readings()
@@ -118,10 +124,13 @@ def loop():
                 temperature = average(readings, "temperature")
                 humidity = min_of_list(readings, "humidity")
 
-                if target_temperature > temperature:
-                    controller.activate_heatpad()
-                else:
+                if temperature_probe - temperature_threshold > target_temperature:
                     controller.deactivate_heatpad()
+                else:
+                    if temperature - temperature_threshold_env > target_temperature:
+                        controller.deactivate_heatpad()
+                    else:
+                        controller.activate_heatpad()
 
                 if target_humidity - humidity > humidityThreshold:
                     controller.activate_humidifier_timed(timeHumidifier)
@@ -156,7 +165,7 @@ def min_of_list(readings, key):
 def destructor():
     display.destructor()
     controller.destructor()
-    db.writeEvent(EVENT_SHUTDOWN, '_')
+    db.write_event(EVENT_SHUTDOWN, '_')
     db.destructor()
 
 

@@ -43,7 +43,7 @@ def activate_heatpad_timed(time):
         print("Activate heatpad")
         display.set_output_heatmat(True)
         current_state_heatmat = True
-        db.writeEvent(EVENT_TEMPERATURE, 'on')
+        db.write_event(EVENT_TEMPERATURE, 'on')
         set_pin_to(heatOutput, low, time)
         deactivate_heatpad()
 
@@ -54,15 +54,17 @@ def deactivate_heatpad():
         print("Deactivate heatpad")
         set_pin_to(heatOutput, high)
         display.set_output_heatmat(False)
-        db.writeEvent(EVENT_TEMPERATURE, 'off')
+        db.write_event(EVENT_TEMPERATURE, 'off')
         current_state_heatmat = False
 
 
 def activate_heatpad():
     global current_state_heatmat
     if not current_state_heatmat:
+        print("Activate heatpad")
         display.set_output_heatmat(True)
         set_pin_to(heatOutput, low)
+        db.write_event(EVENT_TEMPERATURE, 'on')
         current_state_heatmat = True
 
 
@@ -83,7 +85,7 @@ def activate_humidifier():
         set_pin_to(humidityOutput, high, humiditySwitchTime)
         set_pin_to(humidityOutput, low, humiditySwitchTime)
         display.set_output_humidifier(True)
-        db.writeEvent(EVENT_HUMIDITY, 'on')
+        db.write_event(EVENT_HUMIDITY, 'on')
         current_state_humidity = True
 
 
@@ -96,7 +98,7 @@ def deactivate_humidifier():
         set_pin_to(humidityOutput, low, humiditySwitchTime)
         set_pin_to(humidityOutput, high, humiditySwitchTime)
         display.set_output_humidifier(False)
-        db.writeEvent(EVENT_HUMIDITY, 'off')
+        db.write_event(EVENT_HUMIDITY, 'off')
         current_state_humidity = False
         # os.system('sudo hub-ctrl -b 001 -d 002 -P 2 -p 0')
 

@@ -32,7 +32,7 @@ def destructor():
         print("PostgreSQL connection is closed")
 
 
-def writeSensors(sensor_readings):
+def write_sensors(sensor_readings):
     try:
         global connection
         cursor = connection.cursor()
@@ -52,7 +52,24 @@ def writeSensors(sensor_readings):
             cursor.close()
 
 
-def writeEvent(event, action):
+def write_probe(probe_temperature):
+    try:
+        global connection
+        cursor = connection.cursor()
+
+        postgres_insert_query = """INSERT INTO measurements (probe_temperature, timestamp) VALUES (%s,%s) """
+        record_to_insert = (probe_temperature, datetime.datetime.now())
+        cursor.execute(postgres_insert_query, record_to_insert)
+
+        connection.commit()
+    except (Exception, psycopg2.Error) as error:
+        print("Failed to insert record into table", error)
+    finally:
+        if cursor:
+            cursor.close()
+
+
+def write_event(event, action):
     cursor = None;
     try:
         global connection

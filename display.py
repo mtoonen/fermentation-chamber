@@ -15,6 +15,7 @@ BORDER = 5
 # Use for I2C.
 i2c = board.I2C()
 oled = adafruit_ssd1306.SSD1306_I2C(WIDTH, HEIGHT, i2c, addr=0x3C, reset=oled_reset)
+current_probe = 0
 current_temperature = 0
 current_humidity = 0
 current_phase = ""
@@ -69,6 +70,12 @@ def set_sensors(temp, hum):
     write_to_display()
 
 
+def set_probe(temp):
+    global current_probe
+    current_probe = temp;
+    write_to_display()
+
+
 def write_to_display():
     outputs = "Hum: "
     if humidifier:
@@ -80,7 +87,7 @@ def write_to_display():
         outputs += "on"
     else:
         outputs += "off"
-    sensor_temp = "Temp: {} / {}".format(current_temperature, target_temperature)
+    sensor_temp = "Temp: S: {} / P: {} / T: {}".format(current_temperature, current_probe, target_temperature)
     sensor_humidity = "Hum: {} / {}".format(current_humidity, target_humidity)
     phase = current_phase
     write_text(outputs, sensor_temp, sensor_humidity, phase)
